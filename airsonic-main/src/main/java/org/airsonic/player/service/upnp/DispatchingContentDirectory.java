@@ -96,7 +96,6 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
         throws ContentDirectoryException {
 
         LOG.info("UPnP request - objectId: " + objectId + ", browseFlag: " + browseFlag + ", filter: " + filter + ", firstResult: " + firstResult + ", maxResults: " + maxResults);
-
         if (objectId == null)
             throw new ContentDirectoryException(ContentDirectoryErrorCode.CANNOT_PROCESS, "objectId is null");
 
@@ -124,6 +123,7 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
             } else {
                 returnValue = browseFlag == BrowseFlag.METADATA ? processor.browseObjectMetadata(itemId) : processor.browseObject(itemId, filter, firstResult, maxResults, orderBy);
             }
+            //LOG.info("returnValue=" + returnValue.getResult());
             return returnValue;
         } catch (Throwable x) {
             LOG.error("UPnP error: " + x, x);
@@ -193,22 +193,29 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
         }
         item.setResources(Arrays.asList(createResourceForSong(song)));
         item.setDescription(song.getComment());
-        item.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(getAlbumArtUrl(parent.getId())));
+        URI aaurl = getAlbumArtUrl(parent.getId());
+        if (aaurl != null && aaurl.toString().length() < 255) {
+            item.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(getAlbumArtUrl(parent.getId())));
+        }
 
         return item;
     }
 
     public URI getAlbumArtUrl(int id) {
-        return UriComponentsBuilder
+        URI returnValue = UriComponentsBuilder
                 .fromUriString(getBaseUrl())
                 .uriComponents(jwtSecurityService
                         .addJWTToken(
-                                User.USERNAME_ANONYMOUS,
+                                User.USERNAME_JWT,
                                 UriComponentsBuilder.fromUriString("ext/coverArt.view")
                                         .queryParam("id", id)
                                         .queryParam("size", CoverArtScheme.LARGE.getSize()))
                         .build())
                 .build().encode().toUri();
+        if (returnValue.toString().length() > 255) {
+            LOG.warn("album art url > 255: " + returnValue.toString());
+        }
+        return returnValue;
     }
 
     public PlaylistUpnpProcessor getPlaylistProcessor() {

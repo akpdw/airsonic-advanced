@@ -57,7 +57,7 @@ public class JWTSecurityService {
         String pathClaim = components.getPath() + (!StringUtils.isBlank(query) ? "?" + components.getQuery() : "");
         Builder builder = JWT
                 .create()
-                .withIssuer("airsonic")
+//                .withIssuer("airsonic")
                 .withSubject(user)
                 .withClaim(CLAIM_PATH, pathClaim)
                 .withExpiresAt(Date.from(expireDate));

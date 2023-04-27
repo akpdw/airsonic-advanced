@@ -38,6 +38,8 @@ import org.fourthline.cling.support.model.DIDLContent;
 import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.seamless.util.MimeType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -48,6 +50,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public abstract class CustomContentDirectory extends AbstractContentDirectoryService {
 
     protected static final String CONTAINER_ID_ROOT = "0";
+    private static final Logger LOG = LoggerFactory.getLogger(CustomContentDirectory.class);
 
     @Autowired
     protected SettingsService settingsService;
@@ -73,10 +76,12 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
             builder.queryParam("format", TranscodingService.FORMAT_RAW);
         }
 
-        builder = jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, builder);
+        builder = jwtSecurityService.addJWTToken(User.USERNAME_JWT, builder);
 
         String url = getBaseUrl() + builder.toUriString();
-
+        if (url.length() > 255) {
+            LOG.warn("songResource url > 255: " + song.getPath());
+        }
         String suffix = song.isVideo() ? FilenameUtils.getExtension(song.getPath()) : transcodingService.getSuffix(player, song, null);
         String mimeTypeString = StringUtil.getMimeType(suffix);
         MimeType mimeType = mimeTypeString == null ? null : MimeType.valueOf(mimeTypeString);
