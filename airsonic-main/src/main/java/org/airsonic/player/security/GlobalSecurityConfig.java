@@ -3,6 +3,7 @@ package org.airsonic.player.security;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.UPnPService;
 import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor.SonosJWTVerification;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -58,6 +59,9 @@ public class GlobalSecurityConfig {
     @Autowired
     private DLNAAuthenticationProvider dlnaAuthProvider;
 
+    @Autowired
+    private UPnPService upnpService;
+
     @EventListener
     public void loginFailureListener(AbstractAuthenticationFailureEvent event) {
         if (event.getSource() instanceof AbstractAuthenticationToken) {
@@ -112,7 +116,7 @@ public class GlobalSecurityConfig {
                 authenticationManager,
                 FAILURE_URL)
             , UsernamePasswordAuthenticationFilter.class);
-        http = http.addFilterBefore(new DLNARequestParameterProcessingFilter(authenticationManager, FAILURE_URL), UsernamePasswordAuthenticationFilter.class);
+        http = http.addFilterBefore(new DLNARequestParameterProcessingFilter(authenticationManager, upnpService, FAILURE_URL), UsernamePasswordAuthenticationFilter.class);
 
         http
                 .securityMatcher("/ext/**")

@@ -1,4 +1,5 @@
 package org.airsonic.player.security;
+import org.airsonic.player.service.UPnPService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +23,14 @@ public class DLNARequestParameterProcessingFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(DLNARequestParameterProcessingFilter.class);
     private final AuthenticationManager authenticationManager;
     private final AuthenticationFailureHandler failureHandler;
+    private final UPnPService upnpService;
 
     public static final String DLNA_AUTH_PARAMETER = "dlnaAuth";
 
-    protected DLNARequestParameterProcessingFilter(AuthenticationManager authenticationManager, String failureUrl) {
+    protected DLNARequestParameterProcessingFilter(AuthenticationManager authenticationManager,
+        UPnPService upnpService, String failureUrl) {
         this.authenticationManager = authenticationManager;
+        this.upnpService = upnpService;
         failureHandler = new SimpleUrlAuthenticationFailureHandler(failureUrl);
     }
 
@@ -45,8 +49,12 @@ public class DLNARequestParameterProcessingFilter implements Filter {
 
     private String findHostname(HttpServletRequest request) {
         String userAgent = request.getHeader("User-Agent");
-        String host = request.getRemoteHost();
-        return userAgent == null ? host : userAgent + "/" + host;
+        String host = request.getRemoteAddr();
+        String friendlyName = null;
+        if (upnpService != null && host != null) {
+            friendlyName = upnpService.getNameForAddress(host);
+        }
+        return friendlyName != null ? friendlyName : userAgent == null ? host : userAgent + "/" + host;
     }
 
     @Override
