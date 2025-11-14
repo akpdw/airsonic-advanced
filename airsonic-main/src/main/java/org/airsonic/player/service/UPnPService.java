@@ -32,6 +32,9 @@ import org.jupnp.model.types.DLNADoc;
 import org.jupnp.model.types.DeviceType;
 import org.jupnp.model.types.UDADeviceType;
 import org.jupnp.model.types.UDN;
+
+import org.jupnp.registry.DefaultRegistryListener;
+import org.jupnp.registry.Registry;
 import org.jupnp.support.connectionmanager.ConnectionManagerService;
 import org.jupnp.support.model.ProtocolInfos;
 import org.jupnp.support.model.dlna.DLNAProfiles;
@@ -49,7 +52,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -70,6 +75,8 @@ public class UPnPService {
     private VersionService versionService;
 
     private UpnpService upnpService;
+
+    private Map<String, String> ipToNameMap = new HashMap<>();
 
     @Autowired
     @Qualifier("dispatchingContentDirectory")
@@ -128,6 +135,31 @@ public class UPnPService {
 
         // the javadoc says UpnpServiceImpl starts on create but it doesn't
         upnpService.startup();
+
+        upnpService.getRegistry().addListener(new DefaultRegistryListener() {
+
+            @Override
+            public void remoteDeviceAdded(Registry registry, RemoteDevice device) {
+                if (device.getIdentity() != null && device.getIdentity().getDescriptorURL() != null &&
+                    device.getIdentity().getDescriptorURL() != null && device.getDetails() != null && device.getDetails().getFriendlyName() != null) {
+                    LOG.debug("mapping {} to {}", device.getIdentity().getDescriptorURL().getHost(), device.getDetails().getFriendlyName());
+                    ipToNameMap.put(device.getIdentity().getDescriptorURL().getHost(), device.getDetails().getFriendlyName());
+                }
+            }
+
+            @Override
+            public void remoteDeviceRemoved(Registry registry, RemoteDevice device) {
+                if (device.getIdentity() != null && device.getIdentity().getDescriptorURL() != null &&
+                    device.getIdentity().getDescriptorURL().getHost() != null && device.getDetails() != null &&
+                    device.getDetails().getFriendlyName() != null) {
+                    String host = device.getDetails().getFriendlyName();
+                    String friendlyName = device.getDetails().getFriendlyName();
+                    if (friendlyName.equals(ipToNameMap.get(host))) {
+                        ipToNameMap.remove(host);
+                    }
+                }
+            }
+        });
 
         // Asynch search for other devices (most importantly UPnP-enabled routers for
         // port-mapping)
@@ -242,5 +274,9 @@ public class UPnPService {
             }
         }
         return result;
+    }
+
+    public String getNameForAddress(String address) {
+        return ipToNameMap.get(address);
     }
 }
