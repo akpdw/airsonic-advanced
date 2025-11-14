@@ -32,6 +32,7 @@ import org.jupnp.model.types.DLNADoc;
 import org.jupnp.model.types.DeviceType;
 import org.jupnp.model.types.UDADeviceType;
 import org.jupnp.model.types.UDN;
+
 import org.jupnp.registry.DefaultRegistryListener;
 import org.jupnp.registry.Registry;
 import org.jupnp.support.connectionmanager.ConnectionManagerService;
